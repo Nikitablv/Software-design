@@ -1,0 +1,55 @@
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include <tupadr3/devicons2/postgresql>
+
+title Continer
+
+Person(Buyer, "Покупатель", "Пользователь, зарегистрированный в системе, способный совершать покупки")
+
+Person(Seller, "Продавец", "Пользователь, зарегистрированный в системе, способный добавлять и редактировать товары")
+
+Person(Administrator, "Администратор", "Управление учетными записями, формирование отчетов, решение жалоб и возвратов")
+
+Person(System_administrator, "Системный администратор", "Безопасность системы, бэкапы, настройки")
+
+System_Boundary(App, "Интегрированная система электронной коммерции") {
+    Container(app_user, "Веб-приложение", "ReactJS", "Веб интерфейс для обычных пользователей")
+
+    Container(app_admin, "Веб-приложение", "ReactJS", "Веб интерфейс панели управления для работы администратора")
+
+    Container(web_api, "Web API", "C#, .net", "Распределение запросов по разным микросервисам")
+
+    Container(UserAuthMicroserv, "Микросервис авторизации пользователей", "C#, .net", "Авторизация пользователей с JWT-токеном")
+    web_api --> UserAuthMicroserv : "Api запрос авторизации пользователя"
+    ContainerDb(UserAuthMicroservDB, "База данных микросервиса авторизации пользователей", "PostgreSQL", "Сохраняет инфо пользователя и его разрешения", $sprite="postgresql")
+    UserAuthMicroserv --> UserAuthMicroservDB : "Прочитать/Записать информацию"
+
+    Container(OrderMicroserv, "Микросервис заказов", "C#, .net", "Отвечает за обработку и управление заказами пользователей")
+    web_api --> OrderMicroserv : "Api запрос совершения заказа"
+    ContainerDb(OrderMicroservDB, "База данных микросервиса заказов", "PostgreSQL", "Хранение информации о всех заказах", $sprite="postgresql")
+    OrderMicroserv --> OrderMicroservDB : "Прочитать/Записать информацию"
+
+    Container(SupportMicroserv, "Микросервис поддержки", "C#, .net", "Отвечает за обработку обращений пользователей и предоставление поддержки по жалобам и возвратам")
+    web_api --> SupportMicroserv : "Api запрос формы поддержки"
+    ContainerDb(SupportMicroservDB, "База данных микросервиса поддержки", "PostgreSQL", "Хранение информации обо всех жалобах, вопросах и возвратах", $sprite="postgresql")
+    SupportMicroserv --> SupportMicroservDB : "Прочитать/Записать информацию"
+
+    Container(ProductMicroserv, "Микросервис товаров", "C#, .net", "Отвечает за управление базой данных товаров, содержит функциональность поиска, фильтрации и добавления новых товаров")
+    web_api --> ProductMicroserv : "Api запрос товара"
+    ContainerDb(ProductMicroservDB, "База данных микросервиса товаров", "PostgreSQL", "Хранение информации обо всех товарах", $sprite="postgresql")
+    ProductMicroserv --> ProductMicroservDB : "Прочитать/Записать информацию"
+}
+
+System_Ext(Delivery, "Служба доставки", "Курьерская служба доставки товаров покупателю")
+
+System_Ext(PaymentSystem, "Банковская система", "Приём денежных средств с учётом налогов и таможенных сборов при международных продажах")
+
+Rel(Buyer, app_user, "Фильтрация и покупка товаров, оставление отзывов")
+Rel(Seller, app_user, "Добавление и редактирование товаров")
+Rel(Administrator, app_admin, "Модерация аккаунтов и жалоб")
+Rel(System_administrator, app_admin, "Следит за целостностью системы и безопасностью данных в ней")
+
+Rel(app_user, web_api, "Использует [HTTPS]")
+Rel(app_admin, web_api, "Использует [HTTPS]")
+
+web_api -> Delivery : "Доставка заказанных пользователями товаров в пункты выдачи"
+web_api --> PaymentSystem : "Переводит денежные средства клиентов"

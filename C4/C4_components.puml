@@ -1,0 +1,78 @@
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Component
+
+Container(app_user, "Веб-приложение", "ReactJS", "Веб интерфейс для обычных пользователей")
+Container(app_admin, "Веб-приложение", "ReactJS", "Веб интерфейс панели управления для работы администратора")
+
+System_Boundary(App, "Web API") {
+
+    Container(order_controller, "OrderController", "c#, .net", "Управление заказами")
+
+    Container(support_controller, "SupportController", "c#, .net", "Управление жалобами, вопросами, возврат средств")
+
+    Container(product_controller, "ProductController", "c#, .net", "Управление товарами (создание, редактирование, добавление, удаление)")
+
+    Container(search_controller, "SearchController", "c#, .net", "Поиск (фильтрация, сортировка) товаров. Рекомендации")
+
+    Container(content_controller, "ContentController", "c#, .net", "Выдача контента товаров (название, описание, фото, характеристики и т.д. )")
+
+    Container(user_auth_controller, "UserAuthController", "c#, .net", "Регистрация, авторизация в системе")
+
+
+
+    Container(order_service, "OrderService", "c#, .net", "")
+
+    Container(product_service, "ConcertService", "c#, .net", "")
+
+    Container(support_service, "SupportService", "c#, .net", "")
+    
+    Container(user_auth_service, "UserAuthService", "c#, .net", "")
+}
+
+ContainerDb(UserAuthMicroservDB, "База данных микросервиса авторизации пользователей", "PostgreSQL", "Сохраняет инфо пользователя и его разрешения", $sprite="postgresql")
+
+ContainerDb(OrderMicroservDB, "База данных микросервиса заказов", "PostgreSQL", "Хранение информации о всех заказах", $sprite="postgresql")
+
+ContainerDb(SupportMicroservDB, "База данных микросервиса поддержки", "PostgreSQL", "Хранение информации обо всех жалобах, вопросах и возвратах", $sprite="postgresql")
+
+ContainerDb(ProductMicroservDB, "База данных микросервиса товаров", "PostgreSQL", "Хранение информации обо всех товарах", $sprite="postgresql")
+
+SystemQueue(OrderMessageBus, "Шина сообщений оплаты заказа [RabbitMQ]", "Отвечает за события с платежными транзакциями")
+
+SystemQueue(SupportMessageBus, "Шина сообщений жалоб, возвратов и т.д. [RabbitMQ]", "Отвечает за события с появлением запросов на возврат и жалобы")
+
+System_Ext(Delivery, "Служба доставки", "Курьерская служба доставки товаров покупателю")
+
+System_Ext(PaymentSystem, "Банковская система", "Приём денежных средств с учётом налогов и таможенных сборов при международных продажах")
+
+
+app_user ---> order_controller : "[json, HTTPS] Запросы создания, редактирования и удаления"
+app_user ---> support_controller : "[json, HTTPS] Запросы подачи заявок в поддержку"
+app_admin ---> support_controller : "[json, HTTPS] Запросы ответа и обработки заявок в поддержку"
+app_user ---> product_controller : "[json, HTTPS] Запросы создания, редактирования и удаления"
+app_user ---> search_controller : "[json, HTTPS] Поисковые запросы"
+app_admin ---> search_controller : "[json, HTTPS] Запросы на применение алгоритмов поиска и рекомендаций"
+app_user ---> content_controller : "[json, HTTPS] Запросы создания, редактирования и чтения"
+app_user ---> user_auth_controller : "[json, HTTPS] Запросы регистрации и авторизации"
+app_admin ---> user_auth_controller : "[json, HTTPS] Запросы на управление аккаунтами"
+
+
+order_controller ----> order_service
+support_controller ----> support_service
+product_controller ----> product_service
+search_controller ----> product_service
+content_controller ----> product_service
+user_auth_controller ----> user_auth_service
+
+
+order_service -----> OrderMicroservDB
+support_service -----> SupportMicroservDB
+product_service -----> ProductMicroservDB
+user_auth_service ----> UserAuthMicroservDB
+
+order_service -----> OrderMessageBus
+support_service -----> SupportMessageBus
+
+order_service --> PaymentSystem : "Оплата"
+order_service --> Delivery : "Доставка"
