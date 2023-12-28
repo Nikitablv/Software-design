@@ -1,0 +1,41 @@
+@startuml
+  !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+!include <tupadr3/devicons2/postgresql>
+!include <tupadr3/material/queue>
+
+LAYOUT_WITH_LEGEND()
+
+title Диаграмма развертывания типового микросервиса для системы электронной коммерции
+
+Deployment_Node(dc, "Датацентр Google Cloud", "Система электронной коммерции"){
+    Container(web_api, "Web API", "", "Распределение запросов по разным микросервисам")
+
+   'Микросервис товаров
+    Deployment_Node(gke, "Платформа Google Kubernetes Engine на Google Cloud", "GKE"){
+        Deployment_Node(gkeNode, "Нода микросервиса товаров", "kubernetes node"){
+            Deployment_Node(gkePod, "Под микросервиса товаров", "kubernetes pod"){
+                Container(userMicroservice, "Микросервис товаров", "C#, .net", "Управление базой данных товаров, содержит функциональность поиска, фильтрации и добавления новых товаров")
+            }
+        }
+    }
+
+    Deployment_Node(clusterPostgreSQL, "Кластер Google Cloud SQL for PostgreSQL", "gc managed-postgresql", "Кластер состоит из одного хоста БД — VPS сервер с развернутой СУБД"){
+        Deployment_Node(clusterPostgreSQLHost, "Production DB Host", "HA db-g1-small", "RAM: 1.7GB \n Storage Capacity: 3 062GB"){
+            ContainerDb(userMicroserviceDB, "База данных микросервиса товаров", "PostgreSQL", "Сохраняет предоставленную информацию о всех товарах, фильтры, категории", $sprite="postgresql")
+        }
+    }
+}
+
+Deployment_Node(App, "Устройство пользователя", "Windows OS или Android") {
+    Container(app_user, "Веб-приложение", "ReactJS", "Веб интерфейс для обычных пользователей")
+}
+
+web_api --> gke
+userMicroservice --> clusterPostgreSQL : "Прочитать/Записать информацию"
+
+App --> web_api : "Отправка запроса\n[HTTPS/JSON]"
+
+SHOW_LEGEND()
+
+@enduml
