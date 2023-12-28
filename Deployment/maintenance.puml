@@ -1,0 +1,60 @@
+@startuml Energy Consumption Accounting System Web App. maintenance
+
+'left to right direction	
+top to bottom direction
+
+' skin
+skinparam rectangle<<boundary>> {
+    Shadowing false
+    StereotypeFontSize 0
+    FontColor #444444
+    BorderColor #444444
+    BorderStvle dashed
+    BackgroundColor #FFFFFF
+    allign right
+}
+
+package "Development" {
+    [Developer]
+    [Code VCS]
+    [CI pipeline]
+    [CD pipeline]
+}
+
+[Developer] --> [Code VCS]: "Commit" 
+[Code VCS] --> [CI pipeline]: "Test & build"
+[CI pipeline] --> [CD pipeline]
+
+package "Google Cloud" {
+    package "Google Kubernetes Engine" {  
+        [Controller]
+        package "Kubernetes Node" {  
+            package "Kubernetes Pod" {  
+                [Microservice container]
+            }
+        }
+    }
+    [Controller] --> [Microservice container]
+    [CD pipeline] --> [Controller]: "Deploy" 
+
+    package "Manage Services by Google Compute Engine" {
+        [PostgreSQL кластер]
+    }
+    [Controller] --> [PostgreSQL кластер]
+}
+
+package "External Network" {
+   [User]
+}
+[User] --> [Microservice container]
+
+package "Artifacts" {
+    [Container Registry]
+    [Config VCS]
+}
+
+[CI pipeline] --> [Container Registry]: "Upload image"
+[Controller] --> [Container Registry]: "Pull changes"
+[Controller] --> [Config VCS]: "Get configuration settings"
+
+@enduml
